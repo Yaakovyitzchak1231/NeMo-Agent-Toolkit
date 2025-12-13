@@ -18,8 +18,16 @@
 import asyncio
 import logging
 
+from pydantic import BaseModel
+
+from nat.cli.cli_utils.config_override import load_and_override_config
+from nat.data_models.config import Config
 from nat.data_models.finetuning import FinetuneRunConfig
 from nat.finetuning.interfaces.finetuning_runner import Trainer
+from nat.runtime.loader import PluginTypes
+from nat.runtime.loader import discover_and_register_plugins
+from nat.runtime.loader import load_config
+from nat.utils.data_models.schema_validator import validate_schema
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +77,21 @@ async def run_finetuning(runner: Trainer) -> None:
         logger.info("Cleanup completed")
 
 
+def _load_finetune_config(run_config: FinetuneRunConfig) -> Config:
+    """
+    Load and optionally override the finetuning config.
+    """
+    if isinstance(run_config.config_file, BaseModel):
+        return run_config.config_file
+
+    if run_config.override:
+        discover_and_register_plugins(PluginTypes.CONFIG_OBJECT)
+        config_dict = load_and_override_config(run_config.config_file, run_config.override)
+        return validate_schema(config_dict, Config)
+
+    return load_config(config_file=run_config.config_file)
+
+
 async def finetuning_main(run_config: FinetuneRunConfig) -> None:
     """
     Main entry point for finetuning runtime.
@@ -78,9 +101,8 @@ async def finetuning_main(run_config: FinetuneRunConfig) -> None:
     """
 
     from nat.builder.workflow_builder import WorkflowBuilder
-    from nat.runtime.loader import load_config
 
-    config = load_config(config_file=run_config.config_file)
+    config = _load_finetune_config(run_config)
     finetuning_config = config.finetuning
     finetuning_config.run_configuration = run_config
 

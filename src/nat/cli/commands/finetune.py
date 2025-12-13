@@ -20,8 +20,13 @@ from pathlib import Path
 
 import click
 
+from nat.cli.cli_utils.config_override import load_and_override_config
+from nat.data_models.config import Config
 from nat.data_models.finetuning import FinetuneRunConfig
 from nat.finetuning.finetuning_runtime import run_finetuning_sync
+from nat.runtime.loader import PluginTypes
+from nat.runtime.loader import discover_and_register_plugins
+from nat.utils.data_models.schema_validator import validate_schema
 
 logger = logging.getLogger(__name__)
 
@@ -107,15 +112,18 @@ def finetune_command(
     logger.info("Starting finetuning with config: %s", config_file)
 
     # Apply overrides if provided
+    config: Path | Config = config_file
     if override:
         logger.info("Applying config overrides: %s", override)
-        # TODO: Implement config override logic similar to other commands
+        discover_and_register_plugins(PluginTypes.CONFIG_OBJECT)
+        config_dict = load_and_override_config(config_file, override)
+        config = validate_schema(config_dict, Config)
 
     try:
         # Run the finetuning process
         run_finetuning_sync(
             FinetuneRunConfig(
-                config_file=config_file,
+                config_file=config,
                 dataset=dataset,
                 result_json_path=result_json_path,
                 endpoint=endpoint,
