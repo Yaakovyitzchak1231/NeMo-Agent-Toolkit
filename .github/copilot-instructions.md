@@ -243,7 +243,7 @@ This exposes the workflow to framework-specific integrations (A2A server, LangSe
 - Use "NeMo Agent toolkit" (lowercase "toolkit")
 - Vale style checks in `ci/vale/` enforce terminology
 - Markdown link checking via CI
-- Update [CHANGELOG.md](CHANGELOG.md) for user-facing changes (DO NOT edit with code changes)
+- Update [CHANGELOG.md](../CHANGELOG.md) for user-facing changes (DO NOT edit with code changes)
 
 ### Testing Conventions
 
